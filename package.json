@@ -1,6 +1,6 @@
 {
   "name": "blackthorn",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "A Behavior Tree library in TypeScript.",
   "keywords": [
     "ai",
@@ -10,7 +10,7 @@
   "main": "dist/blackthorn.js",
   "repository": {
     "type": "git",
-    "url": "git://github.com/yahiko00/blackthorn.git"
+    "url": "git://github.com/yahiko00/BlackThorn.git"
   },
   "scripts": {
     "build": "tsc && uglifyjs dist/blackthorn.js -mc --output dist/blackthorn.min.js"

@@ -4,7 +4,7 @@ A Behavior Tree library in TypeScript.
 
 
 ## Installation ##
-	npm install geometry2d
+	npm install blackthorn
 
 
 ## Build ##
@@ -13,7 +13,7 @@ A Behavior Tree library in TypeScript.
 
 ## Usage ##
 
-All constants, interfaces, classes and functions are accessible inside the `G2D` namespace.
+All constants, interfaces, classes and functions are accessible inside the `Blackthorn` namespace.
 
 
 ## API Documentation ##
