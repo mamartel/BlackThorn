@@ -1,0 +1,31 @@
+{
+  "name": "blackthorn",
+  "version": "0.1.0",
+  "description": "A Behavior Tree library in TypeScript.",
+  "keywords": [
+    "ai",
+    "behavior",
+    "game"
+  ],
+  "main": "dist/blackthorn.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/yahiko00/blackthorn.git"
+  },
+  "scripts": {
+    "build": "tsc && uglifyjs dist/blackthorn.js -mc --output dist/blackthorn.min.js"
+  },
+  "author": "Yahiko <yahiko.ninja@gmail.com>",
+  "maintainers": [
+    "Yahiko"
+  ],
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/yahiko00/BlackThorn/raw/master/LICENSE.txt"
+    }
+  ],
+  "devDependencies": {
+    "uglify-js": "^2.4.13"
+  }
+}
