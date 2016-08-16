@@ -25,7 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace Blackthorn {
     export const enum Status { FAILURE, SUCCESS, RUNNING, ERROR };
 
-    export abstract class Agent {
+    export class Agent {
         tree: BehaviorTree;
         blackboard: Blackboard;
         ticker: Ticker;

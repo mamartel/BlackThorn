@@ -13,7 +13,7 @@
     "url": "git://github.com/yahiko00/BlackThorn.git"
   },
   "scripts": {
-    "build": "tsc && uglifyjs dist/blackthorn.js -mc --output dist/blackthorn.min.js"
+    "build": "tsc -d && uglifyjs dist/blackthorn.js -mc --output dist/blackthorn.min.js"
   },
   "author": "Yahiko <yahiko.ninja@gmail.com>",
   "maintainers": [
