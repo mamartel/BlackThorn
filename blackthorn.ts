@@ -174,7 +174,7 @@ namespace Blackthorn {
             this.root = root;
         } // constructor
 
-        tick(subject: any, blackboard: Blackboard) {
+        tick(subject: any, blackboard: Blackboard): void {
             /* CREATE A TICK OBJECT */
             let ticker = new Ticker(subject, blackboard, this);
 
@@ -279,11 +279,31 @@ namespace Blackthorn {
         exit(ticker: Ticker): void { }
     } // BaseNote
 
-    export class Sequence extends BaseNode {
+    export abstract class Action extends BaseNode {
+        constructor() {
+            super();
+        } // constructor
+    } // Action
+
+    export abstract class Composite extends BaseNode {
         constructor(...children: BaseNode[]) {
             super(children);
-        }
+        } // constructor
+    } // Composite
 
+    export abstract class Condition extends BaseNode {
+        constructor() {
+            super();
+        } // constructor
+    } // Condition
+
+    export abstract class Decorator extends BaseNode {
+        constructor(child: BaseNode) {
+            super([child]);
+        } // constructor
+    } // Decorator
+
+    export class Sequence extends Composite {
         tick(ticker: Ticker): Status {
             for (let i = 0; i < this.children.length; i++) {
                 let status = this.children[i]._execute(ticker);
@@ -297,11 +317,7 @@ namespace Blackthorn {
         } // tick
     } // Sequence
 
-    export class Selector extends BaseNode {
-        constructor(...children: BaseNode[]) {
-            super(children);
-        } // constructor
-
+    export class Selector extends Composite {
         tick(ticker: Ticker): Status {
             for (let i = 0; i < this.children.length; i++) {
                 let status = this.children[i]._execute(ticker);
@@ -315,12 +331,9 @@ namespace Blackthorn {
         } // tick
     } // Selector
 
-    export class MemSequence extends BaseNode {
-        constructor(...children: BaseNode[]) {
-            super(children);
-        } // constructor
-
-        open(ticker: Ticker) {
+    export class MemSequence extends Composite {
+        open(ticker: Ticker): void {
+            super.open(ticker);
             ticker.blackboard.set("runningChild", 0, ticker.tree.id, this.id);
         } // open
 
@@ -341,12 +354,9 @@ namespace Blackthorn {
         } // tick
     } // MemSequence
 
-    export class MemSelector extends BaseNode {
-        constructor(...children: BaseNode[]) {
-            super(children);
-        } // constructor
-
-        open(ticker: Ticker) {
+    export class MemSelector extends Composite {
+        open(ticker: Ticker): void {
+            super.open(ticker);
             ticker.blackboard.set("runningChild", 0, ticker.tree.id, this.id);
         } // open
 
@@ -367,18 +377,13 @@ namespace Blackthorn {
         } // tick
     } // MemSelector
 
-    export class Inverter extends BaseNode {
-        constructor(...children: BaseNode[]) {
-            super(children);
-        } // constructor
-
-        tick(ticker: Ticker) {
-            let child = this.children[0];
-
-            if (!child) {
+    export class Inverter extends Decorator {
+        tick(ticker: Ticker): Status {
+            if (this.children.length !== 1) {
                 return Status.ERROR;
             }
 
+            let child = this.children[0];
             let status = child._execute(ticker);
 
             if (status === Status.SUCCESS)
@@ -390,31 +395,236 @@ namespace Blackthorn {
         } // tick
     } // Inverter
 
-    export class Error extends BaseNode {
-        tick(ticker: Ticker) {
+    export class Limiter extends Decorator {
+        maxLoop: number;
+
+        constructor(child: BaseNode, maxLoop = 1) {
+            super(child);
+            this.maxLoop = maxLoop;
+        } // constructor
+
+        open(ticker: Ticker): void {
+            super.open(ticker);
+            ticker.blackboard.set("i", 0, ticker.tree.id, this.id);
+        } // open
+
+        tick(ticker: Ticker): Status {
+            if (this.children.length !== 1) {
+                return Status.ERROR;
+            }
+
+            let child = this.children[0];
+            let i = ticker.blackboard.get("i", ticker.tree.id, this.id);
+
+            if (i < this.maxLoop) {
+                let status = child._execute(ticker);
+
+                if (status === Blackthorn.Status.SUCCESS || status === Blackthorn.Status.FAILURE) {
+                    ticker.blackboard.set("i", i + 1, ticker.tree.id, this.id);
+                }
+                return status;
+            }
+
+            return Status.FAILURE;
+        } // tick
+    } // Limiter
+
+    export class MaxTime extends Decorator {
+        maxTime: number;
+
+        constructor(child: BaseNode, maxTime: number) {
+            super(child);
+            this.maxTime = maxTime;
+        } // constructor
+
+        open(ticker: Ticker): void {
+            super.open(ticker);
+            let startTime = (new Date()).getTime();
+            ticker.blackboard.set("startTime", startTime, ticker.tree.id, this.id);
+        } // open
+
+        tick(ticker: Ticker): Status {
+            if (this.children.length !== 1) {
+                return Status.ERROR;
+            }
+
+            let child = this.children[0];
+            let currTime = (new Date()).getTime();
+            let startTime = ticker.blackboard.get("startTime", ticker.tree.id, this.id);
+
+            let status = child._execute(ticker);
+            if (currTime - startTime > this.maxTime) {
+                child._close(ticker);
+                return Status.FAILURE;
+            }
+
+            return status;
+        } // tick
+    } // MaxTime
+
+    export class MaxTicks extends Decorator {
+        maxTicks: number;
+
+        constructor(child: BaseNode, maxTicks: number) {
+            super(child);
+            this.maxTicks = maxTicks;
+        } // constructor
+
+        open(ticker: Ticker): void {
+            super.open(ticker);
+            ticker.blackboard.set("elapsedTicks", 0, ticker.tree.id, this.id);
+        } // open
+
+        tick(ticker: Ticker): Status {
+            if (this.children.length !== 1) {
+                return Status.ERROR;
+            }
+
+            let child = this.children[0];
+            let elapsedTicks = ticker.blackboard.get("elapsedTicks", ticker.tree.id, this.id);
+
+            let status = child._execute(ticker);
+            if (elapsedTicks >= this.maxTicks) {
+                child._close(ticker);
+                return Status.FAILURE;
+            }
+
+            ticker.blackboard.set("elapsedTicks", elapsedTicks + 1, ticker.tree.id, this.id);
+
+            return status;
+        } // tick
+    } // MaxTicks
+
+    export class Repeater extends Decorator {
+        maxLoop: number;
+
+        constructor(child: BaseNode, maxLoop = -1) {
+            super(child);
+            this.maxLoop = maxLoop;
+        } // constructor
+
+        open(ticker: Ticker): void {
+            ticker.blackboard.set("i", 0, ticker.tree.id, this.id);
+        } // open
+
+        tick(ticker: Ticker): Status {
+            if (this.children.length !== 1) {
+                return Status.ERROR;
+            }
+
+            let child = this.children[0];
+            let i = ticker.blackboard.get("i", ticker.tree.id, this.id);
+            let status = Blackthorn.Status.SUCCESS;
+
+            while (this.maxLoop < 0 || i < this.maxLoop) {
+                status = child._execute(ticker);
+
+                if (status === Blackthorn.Status.SUCCESS || status === Blackthorn.Status.FAILURE)
+                    i++;
+                else
+                    break;
+            }
+
+            ticker.blackboard.set("i", i, ticker.tree.id, this.id);
+            return status;
+        } // tick
+    } // Repeater
+
+    export class RepeatUntilFailure extends Decorator {
+        maxLoop: number;
+
+        constructor(child: BaseNode, maxLoop = -1) {
+            super(child);
+            this.maxLoop = maxLoop;
+        } // constructor
+
+        open(ticker: Ticker): void {
+            ticker.blackboard.set("i", 0, ticker.tree.id, this.id);
+        } // open
+
+        tick(ticker: Ticker): Status {
+            if (this.children.length !== 1) {
+                return Status.ERROR;
+            }
+
+            let child = this.children[0];
+            let i = ticker.blackboard.get("i", ticker.tree.id, this.id);
+            let status = Blackthorn.Status.SUCCESS;
+
+            while (this.maxLoop < 0 || i < this.maxLoop) {
+                let status = child._execute(ticker);
+
+                if (status === Blackthorn.Status.SUCCESS)
+                    i++;
+                else
+                    break;
+            }
+
+            ticker.blackboard.set("i", i, ticker.tree.id, this.id);
+            return status;
+        } // tick
+    } // RepeatUntilFailure
+
+    export class RepeatUntilSuccess extends Decorator {
+        maxLoop: number;
+
+        constructor(child: BaseNode, maxLoop = -1) {
+            super(child);
+            this.maxLoop = maxLoop;
+        } // constructor
+
+        open(ticker: Ticker): void {
+            ticker.blackboard.set("i", 0, ticker.tree.id, this.id);
+        } // open
+
+        tick(ticker: Ticker): Status {
+            if (this.children.length !== 1) {
+                return Status.ERROR;
+            }
+
+            let child = this.children[0];
+            let i = ticker.blackboard.get("i", ticker.tree.id, this.id);
+            let status = Blackthorn.Status.FAILURE;
+
+            while (this.maxLoop < 0 || i < this.maxLoop) {
+                let status = child._execute(ticker);
+
+                if (status === Blackthorn.Status.FAILURE)
+                    i++;
+                else
+                    break;
+            }
+
+            ticker.blackboard.set("i", i, ticker.tree.id, this.id);
+            return status;
+        } // tick
+    } // RepeatUntilSuccess
+
+    export class Error extends Action {
+        tick(ticker: Ticker): Status {
             return Status.ERROR;
         } // tick
     } // Error
 
-    export class Failer extends BaseNode {
-        tick(ticker: Ticker) {
+    export class Failer extends Action {
+        tick(ticker: Ticker): Status {
             return Status.FAILURE;
         } // tick
     } // Failer
 
-    export class Runner extends BaseNode {
-        tick(ticker: Ticker) {
+    export class Runner extends Action {
+        tick(ticker: Ticker): Status {
             return Status.RUNNING;
         } // tick
     } // Runner
 
-    export class Succeeder extends BaseNode {
-        tick(ticker: Ticker) {
+    export class Succeeder extends Action {
+        tick(ticker: Ticker): Status {
             return Status.SUCCESS;
         } // tick
     } // Succeeder
 
-    export class WaitTime extends BaseNode {
+    export class WaitTime extends Action {
         duration: number; // in ms
 
         constructor(duration: number = 0) {
@@ -422,17 +632,16 @@ namespace Blackthorn {
             this.duration = duration;
         } // constructor
 
-        open(ticker: Ticker) {
+        open(ticker: Ticker): void {
             let startTime = (new Date()).getTime();
             ticker.blackboard.set("startTime", startTime, ticker.tree.id, this.id);
         }
 
-        tick(ticker: Ticker) {
+        tick(ticker: Ticker): Status {
             let currTime = (new Date()).getTime();
             let startTime = ticker.blackboard.get("startTime", ticker.tree.id, this.id);
-            let elapsedTime = currTime - startTime;
 
-            if (elapsedTime >= this.duration) {
+            if (currTime - startTime >= this.duration) {
                 return Status.SUCCESS;
             }
 
@@ -440,21 +649,26 @@ namespace Blackthorn {
         }
     } // WaitTime
 
-    export class WaitTicks extends BaseNode {
+    export class WaitTicks extends Action {
         duration: number; // in ticks
-        elapsedTime: number; // in ticks
 
         constructor(duration: number = 0) {
             super();
             this.duration = duration;
-            this.elapsedTime = 0;
         } // constructor
 
-        tick(ticker: Ticker) {
-            if (++this.elapsedTime >= this.duration) {
-                this.elapsedTime = 0;
+        open(ticker: Ticker): void {
+            ticker.blackboard.set("elapsedTicks", 0, ticker.tree.id, this.id);
+        } // open
+
+        tick(ticker: Ticker): Status {
+            let elapsedTicks = ticker.blackboard.get("elapsedTicks", ticker.tree.id, this.id);
+
+            if (elapsedTicks >= this.duration) {
                 return Status.SUCCESS;
             }
+
+            ticker.blackboard.set("elapsedTicks", elapsedTicks + 1, ticker.tree.id, this.id);
 
             return Status.RUNNING;
         }
