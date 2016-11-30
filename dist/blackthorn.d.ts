@@ -70,10 +70,10 @@ declare namespace Blackthorn {
     abstract class Decorator<T> extends BaseNode<T> {
         constructor(child: BaseNode<T>);
     }
-    abstract class Condition<T> extends Action<T> {
-        condition: (ticker: Ticker<T>) => boolean;
-        onTrue: BaseNode<T>;
-        onFalse: BaseNode<T>;
+    class Condition<T> extends Action<T> {
+        private _condition;
+        private _onTrue;
+        private _onFalse;
         constructor(condition: (ticker: Ticker<T>) => boolean, onTrue: BaseNode<T>, onFalse: BaseNode<T>);
         tick(ticker: Ticker<T>): Status;
     }

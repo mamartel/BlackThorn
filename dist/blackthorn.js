@@ -226,14 +226,14 @@ var Blackthorn;
         __extends(Condition, _super);
         function Condition(condition, onTrue, onFalse) {
             _super.call(this);
-            this.condition = condition;
-            this.onTrue = onTrue;
-            this.onFalse = onFalse;
+            this._condition = condition;
+            this._onTrue = onTrue;
+            this._onFalse = onFalse;
         }
         Condition.prototype.tick = function (ticker) {
-            return this.condition(ticker)
-                ? this.onTrue.tick(ticker)
-                : this.onFalse.tick(ticker);
+            return this._condition(ticker)
+                ? this._onTrue.tick(ticker)
+                : this._onFalse.tick(ticker);
         };
         return Condition;
     }(Action));
