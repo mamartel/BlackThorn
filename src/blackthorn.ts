@@ -258,6 +258,22 @@ namespace Blackthorn {
     } // Decorator<T>
 
     export abstract class Condition<T> extends Action<T> {
+        condition: (ticker: Ticker<T>) => boolean;
+        onTrue: BaseNode<T>;
+        onFalse: BaseNode<T>;
+
+        constructor(condition: (ticker: Ticker<T>) => boolean, onTrue: BaseNode<T>, onFalse: BaseNode<T>) {
+            super();
+            this.condition = condition;
+            this.onTrue = onTrue;
+            this.onFalse = onFalse;
+        }
+
+        tick(ticker: Ticker<T>): Status {
+             return this.condition(ticker)
+                ? this.onTrue.tick(ticker)
+                : this.onFalse.tick(ticker);
+        }
     } // Condition
 
     export class Sequence<T> extends Composite<T> {
