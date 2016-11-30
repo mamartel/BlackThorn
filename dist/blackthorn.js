@@ -1,4 +1,5 @@
 // blackthorn.ts
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -696,5 +697,5 @@ var Blackthorn;
         var uuid = s.join("");
         return uuid;
     } // createUUID
-})(Blackthorn || (Blackthorn = {})); // Blackthorn
+})(Blackthorn = exports.Blackthorn || (exports.Blackthorn = {})); // Blackthorn
 //# sourceMappingURL=blackthorn.js.map

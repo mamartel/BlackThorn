@@ -1,4 +1,4 @@
-declare namespace Blackthorn {
+export declare module Blackthorn {
     const enum Status {
         FAILURE = 0,
         SUCCESS = 1,

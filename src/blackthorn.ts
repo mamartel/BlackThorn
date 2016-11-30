@@ -1,6 +1,6 @@
 // blackthorn.ts
 
-namespace Blackthorn {
+export module Blackthorn {
     export const enum Status { FAILURE, SUCCESS, RUNNING, ERROR };
 
     export class Agent<T> {
