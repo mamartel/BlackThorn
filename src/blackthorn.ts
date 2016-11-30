@@ -3,15 +3,15 @@
 namespace Blackthorn {
     export const enum Status { FAILURE, SUCCESS, RUNNING, ERROR };
 
-    export class Agent {
-        tree: BehaviorTree;
+    export class Agent<T> {
+        tree: BehaviorTree<T>;
         blackboard: Blackboard;
-        ticker: Ticker;
+        ticker: Ticker<T>;
 
-        constructor(subject: any, tree: BehaviorTree, blackboard: Blackboard) {
+        constructor(subject: T, tree: BehaviorTree<T>, blackboard: Blackboard) {
             this.tree = tree;
             this.blackboard = blackboard;
-            this.ticker = new Ticker(subject, blackboard, tree);
+            this.ticker = new Ticker<T>(subject, blackboard, tree);
         } // constructor
 
         tick() {
@@ -19,8 +19,8 @@ namespace Blackthorn {
         } // tick
     } // Agent
 
-    export class DedicatedAgent extends Agent {
-        constructor(subject: any, tree: BehaviorTree) {
+    export class DedicatedAgent<T> extends Agent<T> {
+        constructor(subject: T, tree: BehaviorTree<T>) {
             super(subject, tree, new Blackboard());
         }
     } // DedicatedAgent
@@ -79,15 +79,15 @@ namespace Blackthorn {
         } // get
     } // Heap
 
-    export class Ticker {
-        tree: BehaviorTree;
-        openNodes: BaseNode[];
+    export class Ticker<T> {
+        tree: BehaviorTree<T>;
+        openNodes: BaseNode<T>[];
         nodeCount: number;
         debug: any;
-        subject: any;
+        subject: T;
         blackboard: Blackboard;
 
-        constructor(subject: any, blackboard: Blackboard, tree: BehaviorTree) {
+        constructor(subject: T, blackboard: Blackboard, tree: BehaviorTree<T>) {
             this.tree = tree;
             this.openNodes = [];
             this.nodeCount = 0;
@@ -96,43 +96,43 @@ namespace Blackthorn {
             this.blackboard = blackboard;
         } // constructor
 
-        enterNode(node: BaseNode) {
+        enterNode(node: BaseNode<T>) {
             this.nodeCount++;
             this.openNodes.push(node);
             // call debug here
         } // enterNode
 
-        openNode(node: BaseNode) {
+        openNode(node: BaseNode<T>) {
             // call debug here
         } // openNode
 
-        tickNode(node: BaseNode) {
+        tickNode(node: BaseNode<T>) {
             // call debug here
         } // tickNode
 
-        closeNode(node: BaseNode) {
+        closeNode(node: BaseNode<T>) {
             // call debug here
             this.openNodes.pop();
         } // closeNode
 
-        exitNode(node: BaseNode) {
+        exitNode(node: BaseNode<T>) {
             // call debug here
         } // exitNode
     } // Ticker
 
-    export class BehaviorTree {
+    export class BehaviorTree<T> {
         id: string;
-        root: BaseNode;
+        root: BaseNode<T>;
 
-        constructor(root: BaseNode) {
+        constructor(root: BaseNode<T>) {
             this.id = createUUID();
             this.root = root;
         } // constructor
 
-        tick(subject: any, blackboard: Blackboard, ticker?: Ticker): void {
+        tick(subject: any, blackboard: Blackboard, ticker?: Ticker<T>): void {
             if (!ticker) {
                 /* CREATE A TICK OBJECT */
-                ticker = new Ticker(subject, blackboard, this);
+                ticker = new Ticker<T>(subject, blackboard, this);
             }
             else {
                 ticker.openNodes = [];
@@ -142,7 +142,7 @@ namespace Blackthorn {
             this.root._execute(ticker);
 
             /* CLOSE NODES FROM LAST TICK, IF NEEDED */
-            let lastOpenNodes = blackboard.get("openNodes", this.id) as BaseNode[];
+            let lastOpenNodes = blackboard.get("openNodes", this.id) as BaseNode<T>[];
             let currOpenNodes = ticker.openNodes;
 
             // does not close if it is still open in this tick
@@ -165,11 +165,11 @@ namespace Blackthorn {
         } // tick
     } // BehaviorTree
 
-    export abstract class BaseNode {
+    export abstract class BaseNode<T> {
         id: string;
-        children: BaseNode[];
+        children: BaseNode<T>[];
 
-        constructor(children?: BaseNode[]) {
+        constructor(children?: BaseNode<T>[]) {
             this.id = createUUID();
 
             this.children = [];
@@ -180,7 +180,7 @@ namespace Blackthorn {
             }
         } // constructor
 
-        _execute(ticker: Ticker): Status {
+        _execute(ticker: Ticker<T>): Status {
             /* ENTER */
             this._enter(ticker);
 
@@ -204,64 +204,64 @@ namespace Blackthorn {
         } // execute
 
         // Wrapper functions
-        _enter(ticker: Ticker): void {
+        _enter(ticker: Ticker<T>): void {
             ticker.enterNode(this);
             this.enter(ticker);
         } // _enter
 
-        _open(ticker: Ticker): void {
+        _open(ticker: Ticker<T>): void {
             ticker.openNode(this);
             ticker.blackboard.set("isOpen", true, ticker.tree.id, this.id);
             this.open(ticker);
         } // _open
 
-        _tick(ticker: Ticker): Status {
+        _tick(ticker: Ticker<T>): Status {
             ticker.tickNode(this);
             return this.tick(ticker);
         } // _tick
 
-        _close(ticker: Ticker): void {
+        _close(ticker: Ticker<T>): void {
             ticker.closeNode(this);
             ticker.blackboard.set("isOpen", false, ticker.tree.id, this.id);
             this.close(ticker);
         } // _close
 
-        _exit(ticker: Ticker): void {
+        _exit(ticker: Ticker<T>): void {
             ticker.exitNode(this);
             this.exit(ticker);
         } // _exit
 
         // Override these to create nodes
-        enter(ticker: Ticker): void { }
-        open(ticker: Ticker): void { }
-        abstract tick(ticker: Ticker): Status;
-        close(ticker: Ticker): void { }
-        exit(ticker: Ticker): void { }
+        enter(ticker: Ticker<T>): void { }
+        open(ticker: Ticker<T>): void { }
+        abstract tick(ticker: Ticker<T>): Status;
+        close(ticker: Ticker<T>): void { }
+        exit(ticker: Ticker<T>): void { }
     } // BaseNote
 
-    export abstract class Action extends BaseNode {
+    export abstract class Action<T> extends BaseNode<T> {
         constructor() {
             super();
         } // constructor
     } // Action
 
-    export abstract class Composite extends BaseNode {
-        constructor(...children: BaseNode[]) {
+    export abstract class Composite<T> extends BaseNode<T> {
+        constructor(...children: BaseNode<T>[]) {
             super(children);
         } // constructor
     } // Composite
 
-    export abstract class Decorator extends BaseNode {
-        constructor(child: BaseNode) {
+    export abstract class Decorator<T> extends BaseNode<T> {
+        constructor(child: BaseNode<T>) {
             super([child]);
         } // constructor
-    } // Decorator
+    } // Decorator<T>
 
-    export abstract class Condition extends Action {
+    export abstract class Condition<T> extends Action<T> {
     } // Condition
 
-    export class Sequence extends Composite {
-        tick(ticker: Ticker): Status {
+    export class Sequence<T> extends Composite<T> {
+        tick(ticker: Ticker<T>): Status {
             for (let i = 0; i < this.children.length; i++) {
                 let status = this.children[i]._execute(ticker);
 
@@ -274,8 +274,8 @@ namespace Blackthorn {
         } // tick
     } // Sequence
 
-    export class Selector extends Composite {
-        tick(ticker: Ticker): Status {
+    export class Selector<T> extends Composite<T> {
+        tick(ticker: Ticker<T>): Status {
             for (let i = 0; i < this.children.length; i++) {
                 let status = this.children[i]._execute(ticker);
 
@@ -288,13 +288,13 @@ namespace Blackthorn {
         } // tick
     } // Selector
 
-    export class MemSequence extends Composite {
-        open(ticker: Ticker): void {
+    export class MemSequence<T> extends Composite<T> {
+        open(ticker: Ticker<T>): void {
             super.open(ticker);
             ticker.blackboard.set("runningChild", 0, ticker.tree.id, this.id);
         } // open
 
-        tick(ticker: Ticker): Status {
+        tick(ticker: Ticker<T>): Status {
             let childIndex = ticker.blackboard.get("runningChild", ticker.tree.id, this.id) as number;
 
             for (let i = childIndex; i < this.children.length; i++) {
@@ -312,13 +312,13 @@ namespace Blackthorn {
         } // tick
     } // MemSequence
 
-    export class MemSelector extends Composite {
-        open(ticker: Ticker): void {
+    export class MemSelector<T> extends Composite<T> {
+        open(ticker: Ticker<T>): void {
             super.open(ticker);
             ticker.blackboard.set("runningChild", 0, ticker.tree.id, this.id);
         } // open
 
-        tick(ticker: Ticker): Status {
+        tick(ticker: Ticker<T>): Status {
             let childIndex = ticker.blackboard.get("runningChild", ticker.tree.id, this.id) as number;
 
             for (let i = childIndex; i < this.children.length; i++) {
@@ -336,8 +336,8 @@ namespace Blackthorn {
         } // tick
     } // MemSelector
 
-    export class RandomSelector extends Composite {
-        tick(ticker: Ticker): Status {
+    export class RandomSelector<T> extends Composite<T> {
+        tick(ticker: Ticker<T>): Status {
             let childIndex = (Math.random() * this.children.length) | 0;
             let child = this.children[childIndex];
             let status = child._execute(ticker);
@@ -396,8 +396,8 @@ namespace Blackthorn {
         } // tick
     } // Concurrent
 */
-    export class Inverter extends Decorator {
-        tick(ticker: Ticker): Status {
+    export class Inverter<T> extends Decorator<T> {
+        tick(ticker: Ticker<T>): Status {
             if (this.children.length !== 1) {
                 return Status.ERROR;
             }
@@ -414,21 +414,21 @@ namespace Blackthorn {
         } // tick
     } // Inverter
 
-    export class LimiterTime extends Decorator {
+    export class LimiterTime<T> extends Decorator<T> {
         maxTime: number;
 
-        constructor(maxTime: number, child: BaseNode) {
+        constructor(maxTime: number, child: BaseNode<T>) {
             super(child);
             this.maxTime = maxTime;
         } // constructor
 
-        open(ticker: Ticker): void {
+        open(ticker: Ticker<T>): void {
             super.open(ticker);
             let startTime = (new Date()).getTime();
             ticker.blackboard.set("startTime", startTime, ticker.tree.id, this.id);
         } // open
 
-        tick(ticker: Ticker): Status {
+        tick(ticker: Ticker<T>): Status {
             if (this.children.length !== 1) {
                 return Status.ERROR;
             }
@@ -445,22 +445,22 @@ namespace Blackthorn {
         } // tick
     } // LimiterTime
 
-    export class LimiterTicks extends Decorator {
+    export class LimiterTicks<T> extends Decorator<T> {
         maxTicks: number;
         elapsedTicks: number;
 
-        constructor(maxTicks: number, child: BaseNode) {
+        constructor(maxTicks: number, child: BaseNode<T>) {
             super(child);
             this.maxTicks = maxTicks;
             this.elapsedTicks = 0;
         } // constructor
 
-        open(ticker: Ticker): void {
+        open(ticker: Ticker<T>): void {
             super.open(ticker);
             this.elapsedTicks = 0;
         } // open
 
-        tick(ticker: Ticker): Status {
+        tick(ticker: Ticker<T>): Status {
             if (this.children.length !== 1) {
                 return Status.ERROR;
             }
@@ -476,19 +476,19 @@ namespace Blackthorn {
         } // tick
     } // LimiterTicks
 
-    export class Repeater extends Decorator {
+    export class Repeater<T> extends Decorator<T> {
         maxLoop: number;
 
-        constructor(child: BaseNode, maxLoop = -1) {
+        constructor(child: BaseNode<T>, maxLoop = -1) {
             super(child);
             this.maxLoop = maxLoop;
         } // constructor
 
-        open(ticker: Ticker): void {
+        open(ticker: Ticker<T>): void {
             ticker.blackboard.set("i", 0, ticker.tree.id, this.id);
         } // open
 
-        tick(ticker: Ticker): Status {
+        tick(ticker: Ticker<T>): Status {
             if (this.children.length !== 1) {
                 return Status.ERROR;
             }
@@ -511,19 +511,19 @@ namespace Blackthorn {
         } // tick
     } // Repeater
 
-    export class RepeatUntilFailure extends Decorator {
+    export class RepeatUntilFailure<T> extends Decorator<T> {
         maxLoop: number;
 
-        constructor(child: BaseNode, maxLoop = -1) {
+        constructor(child: BaseNode<T>, maxLoop = -1) {
             super(child);
             this.maxLoop = maxLoop;
         } // constructor
 
-        open(ticker: Ticker): void {
+        open(ticker: Ticker<T>): void {
             ticker.blackboard.set("i", 0, ticker.tree.id, this.id);
         } // open
 
-        tick(ticker: Ticker): Status {
+        tick(ticker: Ticker<T>): Status {
             if (this.children.length !== 1) {
                 return Status.ERROR;
             }
@@ -546,19 +546,19 @@ namespace Blackthorn {
         } // tick
     } // RepeatUntilFailure
 
-    export class RepeatUntilSuccess extends Decorator {
+    export class RepeatUntilSuccess<T> extends Decorator<T> {
         maxLoop: number;
 
-        constructor(child: BaseNode, maxLoop = -1) {
+        constructor(child: BaseNode<T>, maxLoop = -1) {
             super(child);
             this.maxLoop = maxLoop;
         } // constructor
 
-        open(ticker: Ticker): void {
+        open(ticker: Ticker<T>): void {
             ticker.blackboard.set("i", 0, ticker.tree.id, this.id);
         } // open
 
-        tick(ticker: Ticker): Status {
+        tick(ticker: Ticker<T>): Status {
             if (this.children.length !== 1) {
                 return Status.ERROR;
             }
@@ -581,8 +581,8 @@ namespace Blackthorn {
         } // tick
     } // RepeatUntilSuccess
 
-    export class Failer extends Decorator {
-        tick(ticker: Ticker): Status {
+    export class Failer<T> extends Decorator<T> {
+        tick(ticker: Ticker<T>): Status {
             if (this.children.length !== 1) {
                 return Status.ERROR;
             }
@@ -594,8 +594,8 @@ namespace Blackthorn {
         } // tick
     } // Failer
 
-    export class Runner extends Decorator {
-        tick(ticker: Ticker): Status {
+    export class Runner<T> extends Decorator<T> {
+        tick(ticker: Ticker<T>): Status {
             if (this.children.length !== 1) {
                 return Status.ERROR;
             }
@@ -607,8 +607,8 @@ namespace Blackthorn {
         } // tick
     } // Runner
 
-    export class Succeeder extends Decorator {
-        tick(ticker: Ticker): Status {
+    export class Succeeder<T> extends Decorator<T> {
+        tick(ticker: Ticker<T>): Status {
             if (this.children.length !== 1) {
                 return Status.ERROR;
             }
@@ -620,31 +620,31 @@ namespace Blackthorn {
         } // tick
     } // Succeeder
 
-    export class Error extends Action {
-        tick(ticker: Ticker): Status {
+    export class Error<T> extends Action<T> {
+        tick(ticker: Ticker<T>): Status {
             return Status.ERROR;
         } // tick
     } // Error
 
-    export class Failure extends Action {
-        tick(ticker: Ticker): Status {
+    export class Failure<T> extends Action<T> {
+        tick(ticker: Ticker<T>): Status {
             return Status.FAILURE;
         } // tick
     } // Failure
 
-    export class Running extends Action {
-        tick(ticker: Ticker): Status {
+    export class Running<T> extends Action<T> {
+        tick(ticker: Ticker<T>): Status {
             return Status.RUNNING;
         } // tick
     } // Running
 
-    export class Success extends Action {
-        tick(ticker: Ticker): Status {
+    export class Success<T> extends Action<T> {
+        tick(ticker: Ticker<T>): Status {
             return Status.SUCCESS;
         } // tick
     } // Success
 
-    export class WaitTime extends Action {
+    export class WaitTime<T> extends Action<T> {
         duration: number; // in ms
 
         constructor(duration: number = 0) {
@@ -652,12 +652,12 @@ namespace Blackthorn {
             this.duration = duration;
         } // constructor
 
-        open(ticker: Ticker): void {
+        open(ticker: Ticker<T>): void {
             let startTime = (new Date()).getTime();
             ticker.blackboard.set("startTime", startTime, ticker.tree.id, this.id);
         }
 
-        tick(ticker: Ticker): Status {
+        tick(ticker: Ticker<T>): Status {
             let currTime = (new Date()).getTime();
             let startTime = ticker.blackboard.get("startTime", ticker.tree.id, this.id);
 
@@ -669,7 +669,7 @@ namespace Blackthorn {
         }
     } // WaitTime
 
-    export class WaitTicks extends Action {
+    export class WaitTicks<T> extends Action<T> {
         duration: number; // in ticks
         elapsedTicks: number;
 
@@ -679,11 +679,11 @@ namespace Blackthorn {
             this.elapsedTicks = 0;
         } // constructor
 
-        open(ticker: Ticker): void {
+        open(ticker: Ticker<T>): void {
             this.elapsedTicks = 0;
         }
 
-        tick(ticker: Ticker): Status {
+        tick(ticker: Ticker<T>): Status {
             if (++this.elapsedTicks >= this.duration) {
                 this.elapsedTicks = 0;
                 return Status.SUCCESS;

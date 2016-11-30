@@ -221,7 +221,7 @@ var Blackthorn;
         } // constructor
         return Decorator;
     }(BaseNode));
-    Blackthorn.Decorator = Decorator; // Decorator
+    Blackthorn.Decorator = Decorator; // Decorator<T>
     var Condition = (function (_super) {
         __extends(Condition, _super);
         function Condition() {

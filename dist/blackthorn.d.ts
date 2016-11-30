@@ -5,15 +5,15 @@ declare namespace Blackthorn {
         RUNNING = 2,
         ERROR = 3,
     }
-    class Agent {
-        tree: BehaviorTree;
+    class Agent<T> {
+        tree: BehaviorTree<T>;
         blackboard: Blackboard;
-        ticker: Ticker;
-        constructor(subject: any, tree: BehaviorTree, blackboard: Blackboard);
+        ticker: Ticker<T>;
+        constructor(subject: T, tree: BehaviorTree<T>, blackboard: Blackboard);
         tick(): void;
     }
-    class DedicatedAgent extends Agent {
-        constructor(subject: any, tree: BehaviorTree);
+    class DedicatedAgent<T> extends Agent<T> {
+        constructor(subject: T, tree: BehaviorTree<T>);
     }
     class Blackboard {
         private _baseMemory;
@@ -25,136 +25,136 @@ declare namespace Blackthorn {
         set(key: string, value: any, treeScope?: string, nodeScope?: string): void;
         get(key: string, treeScope?: string, nodeScope?: string): any;
     }
-    class Ticker {
-        tree: BehaviorTree;
-        openNodes: BaseNode[];
+    class Ticker<T> {
+        tree: BehaviorTree<T>;
+        openNodes: BaseNode<T>[];
         nodeCount: number;
         debug: any;
-        subject: any;
+        subject: T;
         blackboard: Blackboard;
-        constructor(subject: any, blackboard: Blackboard, tree: BehaviorTree);
-        enterNode(node: BaseNode): void;
-        openNode(node: BaseNode): void;
-        tickNode(node: BaseNode): void;
-        closeNode(node: BaseNode): void;
-        exitNode(node: BaseNode): void;
+        constructor(subject: T, blackboard: Blackboard, tree: BehaviorTree<T>);
+        enterNode(node: BaseNode<T>): void;
+        openNode(node: BaseNode<T>): void;
+        tickNode(node: BaseNode<T>): void;
+        closeNode(node: BaseNode<T>): void;
+        exitNode(node: BaseNode<T>): void;
     }
-    class BehaviorTree {
+    class BehaviorTree<T> {
         id: string;
-        root: BaseNode;
-        constructor(root: BaseNode);
-        tick(subject: any, blackboard: Blackboard, ticker?: Ticker): void;
+        root: BaseNode<T>;
+        constructor(root: BaseNode<T>);
+        tick(subject: any, blackboard: Blackboard, ticker?: Ticker<T>): void;
     }
-    abstract class BaseNode {
+    abstract class BaseNode<T> {
         id: string;
-        children: BaseNode[];
-        constructor(children?: BaseNode[]);
-        _execute(ticker: Ticker): Status;
-        _enter(ticker: Ticker): void;
-        _open(ticker: Ticker): void;
-        _tick(ticker: Ticker): Status;
-        _close(ticker: Ticker): void;
-        _exit(ticker: Ticker): void;
-        enter(ticker: Ticker): void;
-        open(ticker: Ticker): void;
-        abstract tick(ticker: Ticker): Status;
-        close(ticker: Ticker): void;
-        exit(ticker: Ticker): void;
+        children: BaseNode<T>[];
+        constructor(children?: BaseNode<T>[]);
+        _execute(ticker: Ticker<T>): Status;
+        _enter(ticker: Ticker<T>): void;
+        _open(ticker: Ticker<T>): void;
+        _tick(ticker: Ticker<T>): Status;
+        _close(ticker: Ticker<T>): void;
+        _exit(ticker: Ticker<T>): void;
+        enter(ticker: Ticker<T>): void;
+        open(ticker: Ticker<T>): void;
+        abstract tick(ticker: Ticker<T>): Status;
+        close(ticker: Ticker<T>): void;
+        exit(ticker: Ticker<T>): void;
     }
-    abstract class Action extends BaseNode {
+    abstract class Action<T> extends BaseNode<T> {
         constructor();
     }
-    abstract class Composite extends BaseNode {
-        constructor(...children: BaseNode[]);
+    abstract class Composite<T> extends BaseNode<T> {
+        constructor(...children: BaseNode<T>[]);
     }
-    abstract class Decorator extends BaseNode {
-        constructor(child: BaseNode);
+    abstract class Decorator<T> extends BaseNode<T> {
+        constructor(child: BaseNode<T>);
     }
-    abstract class Condition extends Action {
+    abstract class Condition<T> extends Action<T> {
     }
-    class Sequence extends Composite {
-        tick(ticker: Ticker): Status;
+    class Sequence<T> extends Composite<T> {
+        tick(ticker: Ticker<T>): Status;
     }
-    class Selector extends Composite {
-        tick(ticker: Ticker): Status;
+    class Selector<T> extends Composite<T> {
+        tick(ticker: Ticker<T>): Status;
     }
-    class MemSequence extends Composite {
-        open(ticker: Ticker): void;
-        tick(ticker: Ticker): Status;
+    class MemSequence<T> extends Composite<T> {
+        open(ticker: Ticker<T>): void;
+        tick(ticker: Ticker<T>): Status;
     }
-    class MemSelector extends Composite {
-        open(ticker: Ticker): void;
-        tick(ticker: Ticker): Status;
+    class MemSelector<T> extends Composite<T> {
+        open(ticker: Ticker<T>): void;
+        tick(ticker: Ticker<T>): Status;
     }
-    class RandomSelector extends Composite {
-        tick(ticker: Ticker): Status;
+    class RandomSelector<T> extends Composite<T> {
+        tick(ticker: Ticker<T>): Status;
     }
-    class Inverter extends Decorator {
-        tick(ticker: Ticker): Status;
+    class Inverter<T> extends Decorator<T> {
+        tick(ticker: Ticker<T>): Status;
     }
-    class LimiterTime extends Decorator {
+    class LimiterTime<T> extends Decorator<T> {
         maxTime: number;
-        constructor(maxTime: number, child: BaseNode);
-        open(ticker: Ticker): void;
-        tick(ticker: Ticker): Status;
+        constructor(maxTime: number, child: BaseNode<T>);
+        open(ticker: Ticker<T>): void;
+        tick(ticker: Ticker<T>): Status;
     }
-    class LimiterTicks extends Decorator {
+    class LimiterTicks<T> extends Decorator<T> {
         maxTicks: number;
         elapsedTicks: number;
-        constructor(maxTicks: number, child: BaseNode);
-        open(ticker: Ticker): void;
-        tick(ticker: Ticker): Status;
+        constructor(maxTicks: number, child: BaseNode<T>);
+        open(ticker: Ticker<T>): void;
+        tick(ticker: Ticker<T>): Status;
     }
-    class Repeater extends Decorator {
+    class Repeater<T> extends Decorator<T> {
         maxLoop: number;
-        constructor(child: BaseNode, maxLoop?: number);
-        open(ticker: Ticker): void;
-        tick(ticker: Ticker): Status;
+        constructor(child: BaseNode<T>, maxLoop?: number);
+        open(ticker: Ticker<T>): void;
+        tick(ticker: Ticker<T>): Status;
     }
-    class RepeatUntilFailure extends Decorator {
+    class RepeatUntilFailure<T> extends Decorator<T> {
         maxLoop: number;
-        constructor(child: BaseNode, maxLoop?: number);
-        open(ticker: Ticker): void;
-        tick(ticker: Ticker): Status;
+        constructor(child: BaseNode<T>, maxLoop?: number);
+        open(ticker: Ticker<T>): void;
+        tick(ticker: Ticker<T>): Status;
     }
-    class RepeatUntilSuccess extends Decorator {
+    class RepeatUntilSuccess<T> extends Decorator<T> {
         maxLoop: number;
-        constructor(child: BaseNode, maxLoop?: number);
-        open(ticker: Ticker): void;
-        tick(ticker: Ticker): Status;
+        constructor(child: BaseNode<T>, maxLoop?: number);
+        open(ticker: Ticker<T>): void;
+        tick(ticker: Ticker<T>): Status;
     }
-    class Failer extends Decorator {
-        tick(ticker: Ticker): Status;
+    class Failer<T> extends Decorator<T> {
+        tick(ticker: Ticker<T>): Status;
     }
-    class Runner extends Decorator {
-        tick(ticker: Ticker): Status;
+    class Runner<T> extends Decorator<T> {
+        tick(ticker: Ticker<T>): Status;
     }
-    class Succeeder extends Decorator {
-        tick(ticker: Ticker): Status;
+    class Succeeder<T> extends Decorator<T> {
+        tick(ticker: Ticker<T>): Status;
     }
-    class Error extends Action {
-        tick(ticker: Ticker): Status;
+    class Error<T> extends Action<T> {
+        tick(ticker: Ticker<T>): Status;
     }
-    class Failure extends Action {
-        tick(ticker: Ticker): Status;
+    class Failure<T> extends Action<T> {
+        tick(ticker: Ticker<T>): Status;
     }
-    class Running extends Action {
-        tick(ticker: Ticker): Status;
+    class Running<T> extends Action<T> {
+        tick(ticker: Ticker<T>): Status;
     }
-    class Success extends Action {
-        tick(ticker: Ticker): Status;
+    class Success<T> extends Action<T> {
+        tick(ticker: Ticker<T>): Status;
     }
-    class WaitTime extends Action {
+    class WaitTime<T> extends Action<T> {
         duration: number;
         constructor(duration?: number);
-        open(ticker: Ticker): void;
-        tick(ticker: Ticker): Status;
+        open(ticker: Ticker<T>): void;
+        tick(ticker: Ticker<T>): Status;
     }
-    class WaitTicks extends Action {
+    class WaitTicks<T> extends Action<T> {
         duration: number;
         elapsedTicks: number;
         constructor(duration?: number);
-        open(ticker: Ticker): void;
-        tick(ticker: Ticker): Status;
+        open(ticker: Ticker<T>): void;
+        tick(ticker: Ticker<T>): Status;
     }
 }
