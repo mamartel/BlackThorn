@@ -224,9 +224,17 @@ var Blackthorn;
     Blackthorn.Decorator = Decorator; // Decorator<T>
     var Condition = (function (_super) {
         __extends(Condition, _super);
-        function Condition() {
-            _super.apply(this, arguments);
+        function Condition(condition, onTrue, onFalse) {
+            _super.call(this);
+            this.condition = condition;
+            this.onTrue = onTrue;
+            this.onFalse = onFalse;
         }
+        Condition.prototype.tick = function (ticker) {
+            return this.condition(ticker)
+                ? this.onTrue.tick(ticker)
+                : this.onFalse.tick(ticker);
+        };
         return Condition;
     }(Action));
     Blackthorn.Condition = Condition; // Condition

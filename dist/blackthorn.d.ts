@@ -71,6 +71,11 @@ declare namespace Blackthorn {
         constructor(child: BaseNode<T>);
     }
     abstract class Condition<T> extends Action<T> {
+        condition: (ticker: Ticker<T>) => boolean;
+        onTrue: BaseNode<T>;
+        onFalse: BaseNode<T>;
+        constructor(condition: (ticker: Ticker<T>) => boolean, onTrue: BaseNode<T>, onFalse: BaseNode<T>);
+        tick(ticker: Ticker<T>): Status;
     }
     class Sequence<T> extends Composite<T> {
         tick(ticker: Ticker<T>): Status;
